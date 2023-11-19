@@ -1,33 +1,39 @@
-import random
+import sqlite3
 import sys
+from random import randint
 
 from PyQt5 import uic
-from PyQt5.QtGui import QPixmap, QPainter, QColor
 from PyQt5.QtWidgets import *
 
 
-class Main(QMainWindow):
+class MyWidget(QMainWindow):
     def __init__(self):
         super().__init__()
-        uic.loadUi('UI.ui', self)
-        self.pixmap = QPixmap(self.width(), self.height())
-        self.pixmap.fill(QColor(0, 0, 0, 0))
+        self.add_form = None
+        self.con = sqlite3.connect('coffee.sqlite')
+        self.cur = self.con.cursor()
+        uic.loadUi('main.ui', self)
+        layout = QVBoxLayout(self.centralWidget())
+        self.tableWidget = QTableWidget(self)
+        layout.addWidget(self.tableWidget)
+        self.update_table()
 
-        def click():
-            painter = QPainter(self.pixmap)
-            painter.setBrush(QColor(255, 255, 0))
-            r = random.randint(10, 300)
-            painter.drawEllipse(random.randrange(0, self.width()), random.randrange(0, self.height()), r, r)
-            self.repaint()
-
-        self.pushButton.clicked.connect(click)
-
-    def paintEvent(self, a0):
-        QPainter(self).drawPixmap(0, 0, self.pixmap)
+    def update_table(self):
+        query = """SELECT * FROM Coffee"""
+        data = self.cur.execute(query).fetchall()
+        self.tableWidget.clear()
+        self.tableWidget.setColumnCount(len(data[0]))
+        self.tableWidget.setRowCount(0)
+        self.tableWidget.setHorizontalHeaderLabels(
+            ['id', 'название сорта', 'степень обжарки', 'молотый/в зернах', 'описание вкуса', 'цена', 'объем упаковки'])
+        for i, row in enumerate(data):
+            self.tableWidget.insertRow(i)
+            for j, value in enumerate(row):
+                self.tableWidget.setItem(i, j, QTableWidgetItem(str(value)))
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    ex = Main()
+    ex = MyWidget()
     ex.show()
     app.exec()
